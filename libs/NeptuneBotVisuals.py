@@ -6,10 +6,7 @@ import miru
 emojis = {"X": "<:gradex:1262201488009072701>", "SS": "<:gradess:1262201547190702152>",
           "S": "<:grades:1262201580007067780>", "A": "<:gradea:1262201623577366609>",
           "B": "<:gradeb:1262201655097561209>", "C": "<:gradec:1262201670188929074>",
-          "D": "<:graded:1262201683526684757>", "marv": "<:judgemarv:1262388667314470954>",
-          "perf": "<:judgeperf:1262388692593545267>", "great": "<:judgegreat:1262388714592800898>",
-          "good": "<:judgegood:1262388734901354569>", "okay": "<:judgeokay:1262388748872581180>",
-          "miss": "<:judgemiss:1262388763900903504>"}
+          "D": "<:graded:1262201683526684757>"}
 
 class GamemodeSelectView(miru.View):
     def __init__(self, profile_data: dict) -> None:
@@ -43,6 +40,23 @@ class ProfileEmbed(hikari.Embed):
         judgements['total_judgements'] = total_judgements
         return judgements
     
+    def create_judgements_text(self, keys_info: dict, judgements_percents: dict) -> str:
+        max_length = 0
+        
+        rows = [f"**Marvelous: {keys_info['stats']['total_marv']:,} ({judgements_percents['total_marv']:.2f}%) | Perfect: {keys_info['stats']['total_perf']:,} ({judgements_percents['total_perf']:.2f}%)**\n",
+        f"**Great: {keys_info['stats']['total_great']:,} ({judgements_percents['total_great']:.2f}%) | Good: {keys_info['stats']['total_good']:,} ({judgements_percents['total_good']:.2f}%)**\n",
+        f"**Okay: {keys_info['stats']['total_okay']:,} ({judgements_percents['total_okay']:.2f}%) | Miss: {keys_info['stats']['total_miss']:,} ({judgements_percents['total_miss']:.2f}%)**\n",
+        f"**Total: {judgements_percents['total_judgements']:,}**"]
+        
+        for row in rows:
+            if len(row) > max_length:
+                max_length = len(row)
+        result = ""
+        for row in rows:
+            row.center(max_length)
+            result += row
+        return result
+    
     def __init__(self, profile_data: dict, mode: int = 1):
         self.profile_data = profile_data
         self.profile_info = profile_data['info']
@@ -75,8 +89,6 @@ class ProfileEmbed(hikari.Embed):
         
         self.add_field(name="Grades", value=f"**{emojis['X']}: {self.keys_info['stats']['count_grade_x']} | {emojis['SS']}: {self.keys_info['stats']['count_grade_ss']} | {emojis['S']}: {self.keys_info['stats']['count_grade_s']} | {emojis['A']}: {self.keys_info['stats']['count_grade_a']} | {emojis['B']}: {self.keys_info['stats']['count_grade_b']} | {emojis['C']}: {self.keys_info['stats']['count_grade_c']} | {emojis['D']}: {self.keys_info['stats']['count_grade_d']}**")
 
-        self.add_field(name="Judgements", value=f"""**Marvelous: {self.keys_info['stats']['total_marv']:,} ({judgements_percents['total_marv']:.2f}%) | Perfect: {self.keys_info['stats']['total_perf']:,} ({judgements_percents['total_perf']:.2f}%)
-                    Great: {self.keys_info['stats']['total_great']:,} ({judgements_percents['total_great']:.2f}%) | Good: {self.keys_info['stats']['total_good']:,} ({judgements_percents['total_good']:.2f}%)
-                    Okay: {self.keys_info['stats']['total_okay']:,} ({judgements_percents['total_okay']:.2f}%) | Miss: {self.keys_info['stats']['total_miss']:,} ({judgements_percents['total_miss']:.2f}%)
-                    Total: {judgements_percents['total_judgements']:,}**""")
+        self.add_field(name="Judgements", value=self.create_judgements_text(self.keys_info, judgements_percents))
+        
         self.add_field(name="Achievements Progress", value=f"**{self.profile_data['achievement_str']}**")
