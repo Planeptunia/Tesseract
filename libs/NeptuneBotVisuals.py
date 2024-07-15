@@ -2,30 +2,58 @@ from datetime import timedelta
 import dateutil.parser as dp
 import hikari
 import miru
+import math
 
 emojis = {"X": "<:gradex:1262201488009072701>", "SS": "<:gradess:1262201547190702152>",
           "S": "<:grades:1262201580007067780>", "A": "<:gradea:1262201623577366609>",
           "B": "<:gradeb:1262201655097561209>", "C": "<:gradec:1262201670188929074>",
           "D": "<:graded:1262201683526684757>"}
 
+class AchievementsPagesView(miru.View):
+    def __init__(self, achievement_data: list[dict], username: str, lock_type: bool) -> None:
+        self.achievement_data = achievement_data
+        self.username = username
+        self.lock_type = lock_type
+        self.page = 0
+        self.total_pages = math.floor((len(achievement_data) / 5))
+        super().__init__(timeout=None, autodefer=True)
+        if self.page == 0:
+            self.get_item_by_id('back').disabled = True
+
+    
+    @miru.button(emoji="⬅", custom_id="back")
+    async def go_back_page(self, ctx: miru.ViewContext, button: miru.Button):
+        self.page -= 1
+        if self.page == 0:
+            button.disabled = True
+        self.get_item_by_id('next').disabled = False
+        await ctx.message.edit(AchievementsEmbed(self.achievement_data, self.username, self.lock_type, self.page), components=self)
+    
+    @miru.button(emoji="➡", custom_id="next")
+    async def go_next_page(self, ctx: miru.ViewContext, button: miru.Button):
+        if self.page != self.total_pages:
+            self.page += 1
+            if self.page == self.total_pages:
+                button.disabled = True
+            self.get_item_by_id('back').disabled = False
+        await ctx.message.edit(AchievementsEmbed(self.achievement_data, self.username, self.lock_type, self.page), components=self)
+
 class GamemodeSelectView(miru.View):
     def __init__(self, profile_data: dict) -> None:
         self.profile_data = profile_data
         super().__init__(timeout=None, autodefer=True)
-    @miru.text_select(
-        placeholder = "Select Mode",
-        options = [
-            miru.SelectOption(label = "4K"),
-            miru.SelectOption(label = "7K")
-        ]
-    )
-    async def get_mode_option(self, ctx: miru.ViewContext, select: miru.TextSelect):
-        match select.values[0]:
-            case "4K":
-                self.mode = 1
-            case "7K":
-                self.mode = 2
-        await ctx.message.edit(ProfileEmbed(self.profile_data, self.mode))
+
+    @miru.button("4K", style=hikari.ButtonStyle.SUCCESS, custom_id="4k", disabled=True)
+    async def switch_to_4k(self, ctx: miru.ViewContext, button: miru.Button):
+        button.disabled = True
+        self.get_item_by_id("7k").disabled = False
+        await ctx.message.edit(ProfileEmbed(self.profile_data, 1), components=self)
+    
+    @miru.button("7K", style=hikari.ButtonStyle.PRIMARY, custom_id="7k")
+    async def switch_to_7k(self, ctx: miru.ViewContext, button: miru.Button):
+        button.disabled = True
+        self.get_item_by_id("4k").disabled = False
+        await ctx.message.edit(ProfileEmbed(self.profile_data, 2), components=self)
 
 class ProfileEmbed(hikari.Embed):
     def count_judge_percents(self) -> dict:
@@ -92,3 +120,22 @@ class ProfileEmbed(hikari.Embed):
         self.add_field(name="Judgements", value=self.create_judgements_text(self.keys_info, judgements_percents))
         
         self.add_field(name="Achievements Progress", value=f"**{self.profile_data['achievement_str']}**")
+        
+class AchievementsEmbed(hikari.Embed):
+    def __init__(self, achievement_data: list[dict], username: str, lock_type: bool, page: int = 0):
+        title = ""
+        match lock_type:
+            case True:
+                title = f"**{username}'s unlocked achievements**"
+            case False:
+                title = f"**{username}'s locked achievements**"
+        super().__init__(title=title, color=(218, 165, 32))
+        self.set_footer(f"Page {page + 1}/{math.ceil((len(achievement_data) / 5))}")
+        
+        for i in range(5):
+            try:
+                self.add_field(name=f"**#{i + (5 * page) + 1} {achievement_data[i + (5 * page)]['name']}**",
+                            value=f"""{achievement_data[i + (5 * page)]['description']}
+                            Difficulty: {achievement_data[i + (5 * page)]['difficulty']}""")
+            except IndexError:
+                break

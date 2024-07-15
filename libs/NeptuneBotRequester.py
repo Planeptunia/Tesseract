@@ -3,8 +3,6 @@ import dotenv
 import os
 import json
 
-
-
 QUAVER_API_DOMAIN = os.getenv("QUAVER_API_DOMAIN")
 
 def search_by_name(username: str) -> dict:
