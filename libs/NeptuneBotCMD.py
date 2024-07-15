@@ -23,14 +23,16 @@ async def started(event):
 @lightbulb.implements(lightbulb.SlashCommand)
 async def get_profile(ctx: lightbulb.Context):
     search_result = Requester.search_by_name(ctx.options.username)
-    if len(search_result['users']) > 1:
-        await ctx.respond("Found multiple users")
-    else:
-        await ctx.respond(response_type=hikari.ResponseType.DEFERRED_MESSAGE_CREATE)
-        user_info = Requester.get_full_profile_by_id(search_result['users'][0]['id'])
-        grades = Requester.get_grades_by_id(search_result['users'][0]['id'])
-        if grades:
-            profile_embed = Visuals.ProfileEmbed(user_info['user'], grades)
-            await ctx.respond(profile_embed, response_type=hikari.ResponseType.DEFERRED_MESSAGE_UPDATE)
+    user_info = Requester.get_full_profile_by_id(search_result['users'][0]['id'])
+    achievements = Requester.get_achievements_by_id(search_result['users'][0]['id'])
+    total_achievements = 0
+    for achievement in achievements['achievements']:
+        if achievement['unlocked'] == True:
+            total_achievements += 1
+    user_info['user']['achievement_str'] = achievement_str = f"{total_achievements}/{len(achievements['achievements'])}"
+    profile_embed = Visuals.ProfileEmbed(user_info['user'])
+    mode_select = Visuals.GamemodeSelectView(user_info['user'])
+    client.start_view(mode_select)
+    await ctx.respond(profile_embed, components=mode_select)
         
 
