@@ -26,6 +26,11 @@ async def get_profile(ctx: lightbulb.Context):
     if len(search_result['users']) > 1:
         await ctx.respond("Found multiple users")
     else:
+        await ctx.respond(response_type=hikari.ResponseType.DEFERRED_MESSAGE_CREATE)
         user_info = Requester.get_full_profile_by_id(search_result['users'][0]['id'])
-        print(user_info)
-        await ctx.respond("printed")
+        grades = Requester.get_grades_by_id(search_result['users'][0]['id'])
+        if grades:
+            profile_embed = Visuals.ProfileEmbed(user_info['user'], grades)
+            await ctx.respond(profile_embed, response_type=hikari.ResponseType.DEFERRED_MESSAGE_UPDATE)
+        
+
