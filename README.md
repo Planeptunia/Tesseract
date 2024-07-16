@@ -1,2 +1,4 @@
-# quaver_bot
+# Tesseract
+Info Bot for Quaver
+WIP
  

@@ -60,7 +60,7 @@ class ProfileEmbed(hikari.Embed):
         judgements = {}
         total_judgements = 0
         for judgement in self.keys_info['stats'].keys():
-            if judgement.startswith("total") and judgement != "total_score":
+            if judgement.startswith("total_") and judgement not in ["total_score", "total_pauses"]:
                 total_judgements += self.keys_info['stats'][judgement]
                 judgements[judgement] = 0.0
         for judgement in judgements.keys():
@@ -136,6 +136,7 @@ class AchievementsEmbed(hikari.Embed):
             try:
                 self.add_field(name=f"**#{i + (5 * page) + 1} {achievement_data[i + (5 * page)]['name']}**",
                             value=f"""{achievement_data[i + (5 * page)]['description']}
-                            Difficulty: {achievement_data[i + (5 * page)]['difficulty']}""")
+                            Difficulty: {achievement_data[i + (5 * page)]['difficulty']}
+                            {achievement_data[i + (5 * page)]['progress_str']}""")
             except IndexError:
                 break
