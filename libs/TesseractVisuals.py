@@ -7,7 +7,7 @@ import math
 emojis = {"X": "<:gradex:1262201488009072701>", "SS": "<:gradess:1262201547190702152>",
           "S": "<:grades:1262201580007067780>", "A": "<:gradea:1262201623577366609>",
           "B": "<:gradeb:1262201655097561209>", "C": "<:gradec:1262201670188929074>",
-          "D": "<:graded:1262201683526684757>"}
+          "D": "<:graded:1262201683526684757>", "F": "<:gradef:1262728266205106258>"}
 
 class AchievementsPagesView(miru.View):
     def __init__(self, achievement_data: list[dict], username: str, lock_type: bool) -> None:
@@ -61,10 +61,12 @@ class ProfileEmbed(hikari.Embed):
         total_judgements = 0
         for judgement in self.keys_info['stats'].keys():
             if judgement.startswith("total_") and judgement not in ["total_score", "total_pauses"]:
-                total_judgements += self.keys_info['stats'][judgement]
+                if judgement != 'total_miss':
+                    total_judgements += self.keys_info['stats'][judgement]
                 judgements[judgement] = 0.0
         for judgement in judgements.keys():
-            judgements[judgement] = (self.keys_info['stats'][judgement] / total_judgements) * 100
+            if judgement != 'total_miss':
+                judgements[judgement] = (self.keys_info['stats'][judgement] / total_judgements) * 100
         judgements['total_judgements'] = total_judgements
         return judgements
     
@@ -73,7 +75,7 @@ class ProfileEmbed(hikari.Embed):
         
         rows = [f"**Marvelous: {keys_info['stats']['total_marv']:,} ({judgements_percents['total_marv']:.2f}%) | Perfect: {keys_info['stats']['total_perf']:,} ({judgements_percents['total_perf']:.2f}%)**\n",
         f"**Great: {keys_info['stats']['total_great']:,} ({judgements_percents['total_great']:.2f}%) | Good: {keys_info['stats']['total_good']:,} ({judgements_percents['total_good']:.2f}%)**\n",
-        f"**Okay: {keys_info['stats']['total_okay']:,} ({judgements_percents['total_okay']:.2f}%) | Miss: {keys_info['stats']['total_miss']:,} ({judgements_percents['total_miss']:.2f}%)**\n",
+        f"**Okay: {keys_info['stats']['total_okay']:,} ({judgements_percents['total_okay']:.2f}%) | Miss: {keys_info['stats']['total_miss']:,}**\n",
         f"**Total: {judgements_percents['total_judgements']:,}**"]
         
         for row in rows:
@@ -140,3 +142,54 @@ class AchievementsEmbed(hikari.Embed):
                             {achievement_data[i + (5 * page)]['progress_str']}""")
             except IndexError:
                 break
+            
+class RecentScoreEmbed(hikari.Embed):
+    def generate_title(self) -> str:
+        title = ""
+        mods_string = ""
+        if self.score_info['mods_string'] != "None":
+            mods_string = f" +{self.score_info['mods_string']}"
+        title = f"{self.score_info['map']['artist']} - {self.score_info['map']['title']} ({self.score_info['map']['difficulty_name']}){mods_string}"
+        return title
+    
+    def generate_desc(self) -> str:
+        desc = ""
+        if self.score_info['personal_best']:
+            desc = "*A new personal best!*"
+        return desc
+    
+    @staticmethod
+    def calculate_base_diff_from_rating(rating: float, acc: float) -> float:
+        base_difficulty = rating / math.pow(acc / 98, 6)
+        return base_difficulty
+    
+    @staticmethod
+    def calculate_maximum_rating(base_diff: float) -> float:
+        maximum_rating = base_diff * math.pow(100 / 98, 6)
+        return maximum_rating
+    
+    def __init__(self, score_info: dict, author_avatar: str, player_avatar: str, player_name: str, map_max_combo: int, **kwargs):
+        self.score_info = score_info['scores'][0]
+        if kwargs['original_diff'] is not None:
+            self.base_difficulty = kwargs['original_diff']
+            self.max_rating = self.calculate_maximum_rating(kwargs['original_diff'])
+        else:
+            self.base_difficulty = self.calculate_base_diff_from_rating(self.score_info['performance_rating'], self.score_info['accuracy'])
+            self.max_rating = self.calculate_maximum_rating(self.calculate_base_diff_from_rating(self.score_info['performance_rating'], self.score_info['accuracy']))
+        super().__init__(title=self.generate_title(), description=self.generate_desc(), url=f"https://quavergame.com/mapset/map/{self.score_info['map']['id']}", color=(0, 128, 255) , timestamp=dp.isoparse(self.score_info['time']))
+        
+        self.set_author(name=f"Mapset by {self.score_info['map']['creator_username']}", icon=author_avatar)
+        
+        self.add_field(name="Difficulty", value=f"{self.base_difficulty:.2f}")
+        
+        self.add_field(name="Grade", value=emojis[self.score_info['grade']], inline=True)
+        self.add_field(name="Score", value=f"{self.score_info['total_score']:,}", inline=True)
+        self.add_field(name="Performance Rating", value=f"{self.score_info['performance_rating']:.2f} / {self.max_rating:.2f}", inline=True)
+        
+        self.add_field(name="Accuracy", value=f"{self.score_info['accuracy']:.2f}%", inline=True)
+        self.add_field(name="Ratio", value=f"{self.score_info['ratio']:.2f}", inline=True)
+        self.add_field(name="Combo", value=f"{self.score_info['max_combo']}x / {map_max_combo}x", inline=True)
+        
+        self.set_image(f"https://cdn.quavergame.com/mapsets/{self.score_info['map']['mapset_id']}.jpg")
+        
+        self.set_footer(text=f"Score by {player_name}", icon=player_avatar)

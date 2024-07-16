@@ -10,6 +10,10 @@ def search_by_name(username: str) -> dict:
     resp = requests.get(f"{QUAVER_API_DOMAIN}/users/search/{username}")
     return json.loads(resp.content)
 
+def get_mini_profile_by_id(id: int) -> dict:
+    resp = requests.get(f"{QUAVER_API_DOMAIN}/users", params={'id': id})
+    return json.loads(resp.content)
+
 def get_full_profile_by_id(id: int) -> dict:
     resp = requests.get(f"{QUAVER_API_DOMAIN}/users/full/{id}")
     return json.loads(resp.content)
@@ -20,4 +24,12 @@ def get_achievements_by_id(id: int) -> dict:
 
 def get_best_scores_by_id(id: int, mode: int = 1, limit: int = 50) -> dict:
     resp = requests.get(f"{QUAVER_API_DOMAIN}/users/scores/best", params={"id": id, "mode": mode, "limit": limit})
+    return json.loads(resp.content)
+
+def get_recent_scores_by_id(id: int, mode: int = 1, limit: int = 50) -> dict:
+    resp = requests.get(f"{QUAVER_API_DOMAIN}/users/scores/recent", params={"id": id, "mode": mode, "limit": limit})
+    return json.loads(resp.content)
+
+def get_map_info_by_id(id: int) -> dict:
+    resp = requests.get(f"{QUAVER_API_DOMAIN}/maps/{id}")
     return json.loads(resp.content)
