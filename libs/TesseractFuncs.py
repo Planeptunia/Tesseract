@@ -1,5 +1,5 @@
 import dotenv
-import libs.TesseractGlobals as Globals
+import libs.Types.TesseractTypes as Globals
 
 def get_dotenv() -> dict:
     return dotenv.dotenv_values(".env")

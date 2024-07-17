@@ -6,7 +6,7 @@ import time
 import libs.TesseractAPIWrapper as Requester
 import libs.TesseractVisuals as Visuals
 import libs.TesseractFuncs as Funcs
-from libs.TesseractGlobals import tesseract_logger as Logger
+from libs.Types.TesseractTypes import tesseract_logger as Logger
 
 env = Funcs.get_dotenv()
 # default_enabled_guilds=(1033335077779812393)
