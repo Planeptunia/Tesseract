@@ -1,14 +1,25 @@
 import requests
 import json
 import libs.TesseractFuncs as Funcs
+import libs.Types.TesseractTypes as Types
 
 env = Funcs.get_dotenv()
 
 QUAVER_API_DOMAIN = env["QUAVER_API_DOMAIN"]
+QUAVER_APIv2_DOMAIN = env['QUAVER_APIv2_DOMAIN']
 
 def search_by_name(username: str) -> dict:
     resp = requests.get(f"{QUAVER_API_DOMAIN}/users/search/{username}")
     return json.loads(resp.content)
+
+def search_by_namev2(username: str) -> list[Types.QuaverUser]:
+    resp = requests.get(f"{QUAVER_APIv2_DOMAIN}/user/search/{username}")
+    response = Types.QuaverAPIResponse(resp.status_code, json.loads(resp.content))
+    user_list = []
+    for user in response.content['users']:
+        new_user = Types.QuaverUser(user)
+        user_list.append(new_user)
+    return user_list
 
 def get_mini_profile_by_id(id: int) -> dict:
     resp = requests.get(f"{QUAVER_API_DOMAIN}/users", params={'id': id})

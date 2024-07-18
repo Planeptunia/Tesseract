@@ -1,8 +1,9 @@
-from datetime import timedelta
 import dateutil.parser as dp
 import hikari
 import miru
 import math
+import libs.Types.TesseractTypes as Types
+from libs.Types.TesseractTypes import tesseract_logger as Logger
 
 emojis = {"X": "<:gradex:1262201488009072701>", "SS": "<:gradess:1262201547190702152>",
           "S": "<:grades:1262201580007067780>", "A": "<:gradea:1262201623577366609>",
@@ -54,6 +55,69 @@ class GamemodeSelectView(miru.View):
         button.disabled = True
         self.get_item_by_id("4k").disabled = False
         await ctx.message.edit(ProfileEmbed(self.profile_data, 2), components=self)
+
+class ProfileEmbedv2(hikari.Embed):
+    def generate_judgement_text(self) -> str:
+        
+        def get_percent_judgement(judgement_value: int) -> float:
+            return (judgement_value / total_judgements) * 100
+        
+        attrs = vars(self.keys_stats)
+        total_judgements = 0
+        for attr in attrs.keys():
+            if attr.startswith("total_") and attr not in ["total_miss", "total_score"]:
+                total_judgements += getattr(self.keys_stats, attr)
+        
+        rows = [f"**Marvelous: {self.keys_stats.total_marvelous:,} ({get_percent_judgement(self.keys_stats.total_marvelous):.2f}%) | Perfect: {self.keys_stats.total_perfect:,} ({get_percent_judgement(self.keys_stats.total_perfect):.2f}%)**\n",
+        f"**Great: {self.keys_stats.total_great:,} ({get_percent_judgement(self.keys_stats.total_great):.2f}%) | Good: {self.keys_stats.total_good:,} ({get_percent_judgement(self.keys_stats.total_good):.2f}%)**\n",
+        f"**Okay: {self.keys_stats.total_okay:,} ({get_percent_judgement(self.keys_stats.total_okay):.2f}%) | Miss: {self.keys_stats.total_miss:,}**\n",
+        f"**Total: {total_judgements:,}**"]
+        
+        max_length = 0
+        for row in rows:
+            if len(row) > max_length:
+                max_length = len(row)
+        result = ""
+        for row in rows:
+            result += row.center(max_length)
+        return result
+    
+    
+    def __init__(self, user_info: Types.QuaverUser, mode: int = None) -> None:
+        self.user_info = user_info
+        self.mode = mode
+        if self.mode is None:
+            try:
+                self.mode = self.user_info.misc_information['default_mode']
+            except KeyError:
+                Logger.warning(f"Unable to set default_mode for ProfileEmbedv2 for {self.user_info.username}, defaulting to 4K")
+                self.mode = 1
+        match self.mode:
+            case 1:
+                self.keys_stats = user_info.stats_keys4
+                keys_str = "4K"
+            case 2:
+                self.keys_stats = user_info.stats_keys7
+                keys_str = "7K"
+        super().__init__(title=f"{self.user_info.username}'s profile in {keys_str}",
+                         description=f"**#{self.keys_stats.ranks['global']:,} (:flag_{self.user_info.country.lower()}: #{self.keys_stats.ranks['country']:,})**",
+                         url=f"https://quavergame.com/user/{self.user_info.id}?mode={self.mode}", color=(0, 204, 204))
+        
+        self.set_thumbnail(self.user_info.avatar_url)
+        self.set_footer(f"Registered at {dp.isoparse(self.user_info.time_registered).strftime('%d.%m.%Y %H:%M:%S')}")
+        
+        self.add_field(name="Total Score", value=f"**{self.keys_stats.total_score:,}**", inline=True)
+        self.add_field(name="Overall Accuracy", value=f"**{self.keys_stats.overall_accuracy:.2f}%**", inline=True)
+        self.add_field(name="Play Count", value=f"**{self.keys_stats.play_count:,}**", inline=True)
+
+        self.add_field(name="Ranked Score", value=f"**{self.keys_stats.ranked_score:,}**", inline=True)
+        self.add_field(name="Overall Rating", value=f"**{self.keys_stats.overall_performance_rating:.2f}**", inline=True)
+        self.add_field(name="Max Combo", value=f"**{self.keys_stats.max_combo:,}**", inline=True)
+        
+        self.add_field(name="Grades", value=f"**{emojis['X']}: {self.keys_stats.count_grade_x} | {emojis['SS']}: {self.keys_stats.count_grade_ss} | {emojis['S']}: {self.keys_stats.count_grade_s} | {emojis['A']}: {self.keys_stats.count_grade_a} | {emojis['B']}: {self.keys_stats.count_grade_b} | {emojis['C']}: {self.keys_stats.count_grade_c} | {emojis['D']}: {self.keys_stats.count_grade_d}**")
+
+        self.add_field(name="Judgements", value=self.generate_judgement_text())
+        
 
 class ProfileEmbed(hikari.Embed):
     def count_judge_percents(self) -> dict:

@@ -6,7 +6,9 @@ import time
 import libs.TesseractAPIWrapper as Requester
 import libs.TesseractVisuals as Visuals
 import libs.TesseractFuncs as Funcs
+import libs.Types.TesseractTypes as Types
 from libs.Types.TesseractTypes import tesseract_logger as Logger
+from miru.ext import nav
 
 env = Funcs.get_dotenv()
 # default_enabled_guilds=(1033335077779812393)
@@ -26,28 +28,31 @@ async def started(event):
 @lightbulb.implements(lightbulb.SlashCommandGroup)
 async def user(ctx: lightbulb.Context):
     pass
-
+  
 @user.child
 @lightbulb.option("username", "Username for needed profile (if not given will use your Discord Global Name)", type=str, required=False)
 @lightbulb.command("profile", "Get info from user's profile")
 @lightbulb.implements(lightbulb.SlashSubCommand)
 async def get_profile(ctx: lightbulb.Context):
     time_start = time.perf_counter()
-    username = (ctx.options.username if ctx.options.username is not None else ctx.author.global_name) 
-    Logger.info(f"Started grabbing profile of {username}")
-    search_result = Requester.search_by_name(username)
-    user_info = Requester.get_full_profile_by_id(search_result['users'][0]['id'])
-    achievements = Requester.get_achievements_by_id(search_result['users'][0]['id'])
-    total_achievements = 0
-    for achievement in achievements['achievements']:
-        if achievement['unlocked'] == True:
-            total_achievements += 1
-    user_info['user']['achievement_str'] = f"{total_achievements}/{len(achievements['achievements'])}"
-    profile_embed = Visuals.ProfileEmbed(user_info['user'])
-    mode_select = Visuals.GamemodeSelectView(user_info['user'])
-    client.start_view(mode_select)
-    await ctx.respond(profile_embed, components=mode_select)
-    Logger.info(f"Got profile of {username} in {time.perf_counter() - time_start:.3f}s")
+    username = (ctx.options.username if ctx.options.username is not None else ctx.author.global_name)
+    
+    Logger.info(f"Started grabbing profile using v2 of {username}")
+    
+    search_result: list[Types.QuaverUser] = Requester.search_by_namev2(username)
+    
+    user_info = search_result[0]
+    profile_embed_4k = Visuals.ProfileEmbedv2(user_info, 1)
+    profile_embed_7k = Visuals.ProfileEmbedv2(user_info, 2)
+    pages = [profile_embed_4k, profile_embed_7k]
+    btns = [nav.FirstButton(label="4K", emoji=None), nav.LastButton(label="7K", emoji=None)]
+    navigator = nav.NavigatorView(pages=pages, items=btns)
+    
+    builder = await navigator.build_response_async(client)
+    await builder.create_initial_response(ctx.interaction)
+    client.start_view(navigator)
+    
+    Logger.info(f"Got profile of {username} using v2 in {time.perf_counter() - time_start:.3f}s")
         
 @user.child
 @lightbulb.option("type", "Type of achievements to return (Unlocked by default)", type=str, choices=['Unlocked', 'Locked'], default='Unlocked')

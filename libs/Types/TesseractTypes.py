@@ -121,12 +121,15 @@ class QuaverAPIResponse:
         self.page = page
 
 class Serializable:
-    def __init__(self, data: QuaverAPIResponse) -> None:
-        self.data = data.content
+    def __init__(self, data: QuaverAPIResponse | dict) -> None:
+        if type(data) == QuaverAPIResponse:
+            self.data = data.content
+        else:
+            self.data = data
         self.serialize()
     
     def serialize(self):
-        data = self.data.content
+        data = self.data
         if len(data.keys()) > 0:
             for key in data.keys():
                 try:
@@ -136,29 +139,28 @@ class Serializable:
                         tesseract_logger.warning(f"Unable to serialize attribute {key} for {self.__class__.__name__}: Attribute is None in data, continuing")
                 except AttributeError:
                     tesseract_logger.warning(f"Failed to serialize attribute {key} for {self.__class__.__name__}: Attribute not found in object, continuing")
-            for key in vars(self):
-                if getattr(self, key) is None:
-                    tesseract_logger.warning(f"Unable to serialize attribute {key} for {self.__class__.__name__}: Attribute not found in data, continuing")
                   
 class QuaverUser(Serializable):
-    def __init__(self, data: QuaverAPIResponse) -> None:
+    def __init__(self, data: QuaverAPIResponse | dict) -> None:
         self.id: int = None
         self.steam_id: int = None
         self.username: str = None
-        self.time_registed: str = None
+        self.time_registered: str = None
         self.latest_activity: str = None
         self.country: str = None
         self.avatar_url: str = None
         self.title: str = None
         self.donator_end_time: str = None
         self.misc_information: dict = None
-        self.stats_keys4: QuaverKeysStats = None
-        self.stats_keys7: QuaverKeysStats = None
+        self.stats_keys4: dict | QuaverKeysStats = None
+        self.stats_keys7: dict | QuaverKeysStats = None
                 
         super().__init__(data)
+        self.stats_keys4 = QuaverKeysStats(self.stats_keys4)
+        self.stats_keys7 = QuaverKeysStats(self.stats_keys7)
         
 class QuaverKeysStats(Serializable):
-    def __init__(self, data: QuaverAPIResponse) -> None:
+    def __init__(self, data: QuaverAPIResponse | dict) -> None:
         self.ranks: dict = None
         self.total_score: int = None
         self.ranked_score: int = None
@@ -184,7 +186,7 @@ class QuaverKeysStats(Serializable):
         super().__init__(data)
 
 class QuaverAchievement(Serializable):
-    def __init__(self, data: QuaverAPIResponse) -> None:
+    def __init__(self, data: QuaverAPIResponse | dict) -> None:
         self.id: int = None
         self.difficulty: str = None
         self.steam_api_name: str = None
@@ -203,7 +205,7 @@ class QuaverAchievement(Serializable):
     #         pass
 
 class QuaverScore(Serializable):
-    def __init__(self, data: QuaverAPIResponse) -> None:
+    def __init__(self, data: QuaverAPIResponse | dict) -> None:
         self.id: int = None
         self.user_id: int = None
         self.map_md5: str = None
@@ -229,7 +231,7 @@ class QuaverScore(Serializable):
         self.map = QuaverMapInfo(self.map)
         
 class QuaverMapInfo(Serializable):
-    def __init__(self, data: QuaverAPIResponse) -> None:
+    def __init__(self, data: QuaverAPIResponse | dict) -> None:
         self.id: int = None
         self.mapset_id: int = None
         self.md5: str = None
@@ -254,7 +256,7 @@ class QuaverMapInfo(Serializable):
         super().__init__(data)
         
 class QuaverMapset(Serializable):
-    def __init__(self, data: QuaverAPIResponse) -> None:
+    def __init__(self, data: QuaverAPIResponse | dict) -> None:
         self.id: int = None
         self.package_md5: str = None
         self.creator_id: int = None
