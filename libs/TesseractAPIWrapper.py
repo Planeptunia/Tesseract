@@ -2,10 +2,9 @@ import requests
 import json
 import libs.TesseractFuncs as Funcs
 import libs.Types.TesseractTypes as Types
+from libs.Types.TesseractTypes import tesseract_logger as Logger
 
 env = Funcs.get_dotenv()
-
-QUAVER_API_DOMAIN = env["QUAVER_API_DOMAIN"]
 QUAVER_APIv2_DOMAIN = env['QUAVER_APIv2_DOMAIN']
 
 def get_profile_by_id_or_name(id: str | int) -> Types.QuaverUser:
@@ -39,3 +38,9 @@ def get_recent_scores_by_idv2(id: int, mode: int, page: int = 0):
         new_score = Types.QuaverScore(score)
         score_list.append(new_score)
     return score_list
+
+def get_mapset_info_by_id(id: int):
+    resp = requests.get(f"{QUAVER_APIv2_DOMAIN}/mapset/{id}")
+    response = Types.QuaverAPIResponse(resp.status_code, json.loads(resp.content))
+    Logger.debug(response.content)
+    return Types.QuaverMapset(response.content['mapset'])

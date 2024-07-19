@@ -136,7 +136,7 @@ class Serializable:
                     if data[key] is not None:
                         setattr(self, key, data[key])
                     else:
-                        tesseract_logger.warning(f"Unable to serialize attribute {key} for {self.__class__.__name__}: Attribute is None in data, continuing")
+                        tesseract_logger.warning(f"Unable to serialize attribute {key} for {self.__class__.__name__}: Attribute is None in data, ignoring")
                 except AttributeError:
                     tesseract_logger.warning(f"Failed to serialize attribute {key} for {self.__class__.__name__}: Attribute not found in object, continuing")
                   
@@ -260,5 +260,11 @@ class QuaverMapset(Serializable):
         self.date_submitted: str = None
         self.is_visible: bool = None
         self.is_explicit: bool = None
+        self.maps: list[QuaverMapInfo] | list[dict] = None
         
         super().__init__(data)
+        map_obj_list = []
+        for map in self.maps:
+            new_map_obj = QuaverMapInfo(map)
+            map_obj_list.append(new_map_obj)
+        self.maps = map_obj_list

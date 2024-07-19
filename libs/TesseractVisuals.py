@@ -114,7 +114,7 @@ class RecentScoreEmbedv2(hikari.Embed):
 
         self.set_author(name=f"Mapset by {self.score.map.creator_username}")
         
-        self.add_field(name="Difficulty", value=f"{self.get_original_difficulty(self.score.performance_rating, self.score.accuracy):.2f}")
+        self.add_field(name="Difficulty", value=f"{self.score.map.difficulty_rating:.2f}")
 
         self.add_field(name="Grade", value=emojis[self.score.grade], inline=True)
         self.add_field(name="Score", value=f"{self.score.total_score:,}", inline=True)
