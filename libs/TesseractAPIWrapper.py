@@ -35,6 +35,15 @@ def get_achievements_by_idv2(id: int) -> list[Types.QuaverAchievement]:
         achievement_list.append(new_achievement)
     return achievement_list
 
+def get_recent_scores_by_idv2(id: int, mode: int, page: int = 0):
+    resp = requests.get(f"{QUAVER_APIv2_DOMAIN}/user/{id}/scores/{mode}/recent", params={'page': page})
+    response = Types.QuaverAPIResponse(resp.status_code, json.loads(resp.content))
+    score_list = []
+    for score in response.content['scores']:
+        new_score = Types.QuaverScore(score)
+        score_list.append(new_score)
+    return score_list
+
 def get_mini_profile_by_id(id: int) -> dict:
     resp = requests.get(f"{QUAVER_API_DOMAIN}/users", params={'id': id})
     return json.loads(resp.content)

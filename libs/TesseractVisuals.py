@@ -91,14 +91,21 @@ class AchievementsEmbedv2(hikari.Embed):
                 break
 
 class RecentScoreEmbedv2(hikari.Embed):
-    def generate_title(self):
+    def generate_title(self) -> str:
         return f"{self.score.map.artist} - {self.score.map.title} ({self.score.map.difficulty_name})"
     
-    def generate_desc(self):
+    def generate_desc(self) -> str | None:
         if self.score.is_personal_best:
             return "*A new personal best!*"
         else: 
             return None
+    @staticmethod
+    def get_original_difficulty(performance_rating: float, accuracy: float) -> float:
+        return performance_rating / math.pow((accuracy / 98), 6)
+    
+    @staticmethod 
+    def get_max_rating(base_difficulty: float) -> float:
+        return base_difficulty * math.pow((100 / 98), 6)
     
     def __init__(self, scores: list[Types.QuaverScore], user_info: Types.QuaverUser) -> None:
         self.score = scores[0]
@@ -106,6 +113,20 @@ class RecentScoreEmbedv2(hikari.Embed):
         super().__init__(title=self.generate_title(), description=self.generate_desc(), url=f"https://quavergame.com/mapset/map/{self.score.map.id}", color=(0, 128, 255), timestamp=dp.isoparse(self.score.timestamp))
 
         self.set_author(name=f"Mapset by {self.score.map.creator_username}")
+        
+        self.add_field(name="Difficulty", value=f"{self.get_original_difficulty(self.score.performance_rating, self.score.accuracy):.2f}")
+
+        self.add_field(name="Grade", value=emojis[self.score.grade], inline=True)
+        self.add_field(name="Score", value=f"{self.score.total_score:,}", inline=True)
+        self.add_field(name="Performance Rating", value=f"{self.score.performance_rating:.2f} / {self.get_max_rating(self.get_original_difficulty(self.score.performance_rating, self.score.accuracy)):.2f}", inline=True)
+        
+        self.add_field(name="Accuracy", value=f"{self.score.accuracy:.2f}%", inline=True)
+        self.add_field(name="Misses", value=f"{self.score.count_miss:,}x", inline=True)
+        self.add_field(name="Combo", value=f"{self.score.max_combo}x / {self.score.map.max_combo}x", inline=True)
+        
+        self.set_image(f"https://cdn.quavergame.com/mapsets/{self.score.map.mapset_id}.jpg")
+        
+        self.set_footer(text=f"Score by {self.user_info.username}", icon=self.user_info.avatar_url)
 
 class RecentScoreEmbed(hikari.Embed):
     def generate_title(self) -> str:

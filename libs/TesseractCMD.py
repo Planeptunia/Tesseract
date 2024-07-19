@@ -86,28 +86,18 @@ async def get_achievements(ctx: lightbulb.Context):
 async def get_recent_score(ctx: lightbulb.Context):
     time_start = time.perf_counter()
     username = (ctx.options.username if ctx.options.username is not None else ctx.author.global_name)
-    mode = 1
     match ctx.options.mode:
         case "4K":
             mode = 1
         case "7K":
             mode = 2
-        case _:
-            await ctx.respond("Invalid gamemode! Please enter a valid one")
-    Logger.info(f"Started grabbing most recent score of {username}")
-    search_result = Requester.search_by_name(username)
-    most_recent_score = Requester.get_recent_scores_by_id(search_result['users'][0]['id'], mode, 1)
-    author_info = Requester.get_mini_profile_by_id(most_recent_score['scores'][0]['map']['creator_id'])
-    map_info = Requester.get_map_info_by_id(most_recent_score['scores'][0]['map']['id'])
-    original_diff = None
-    if most_recent_score['scores'][0]['grade'] == "F":
-        original_diff = map_info['map']['difficulty_rating']
-    max_combo = map_info['map']['count_hitobject_normal'] + (map_info['map']['count_hitobject_long'] * 2)
-    score_embed = Visuals.RecentScoreEmbed(most_recent_score, author_info['users'][0]['avatar_url'], search_result['users'][0]['avatar_url'], username, max_combo, original_diff=original_diff)
-    await ctx.respond(score_embed)
-    Logger.info(f"Got most recent score of {username} in {time.perf_counter() - time_start:.3f}s")
-    
-    
+    Logger.info(f"Started grabbing most recent score of {username} using v2")
+    search_result = Requester.get_profile_by_id_or_name(username)
+    recent_scores = Requester.get_recent_scores_by_idv2(search_result.id, mode)
+    recent_score_embed = Visuals.RecentScoreEmbedv2(recent_scores, search_result)
+    await ctx.respond(recent_score_embed)
+    Logger.info(f"Got most recent score of {username} in {time.perf_counter() - time_start:.3f}s using v2")
+
 @bot.command
 @lightbulb.add_checks(lightbulb.owner_only, lightbulb.guild_only)
 @lightbulb.command("reboot", "Reboot the bot")
