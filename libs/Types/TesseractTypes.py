@@ -57,7 +57,7 @@ class ModIdentifier(Enum):
         Autoplay = 1 << 19 # The game automatically plays it.
         Paused = 1 << 20 # The user paused during gameplay.
         NoFail = 1 << 21 # Unable to fail during gameplay.
-        NoongNotes = 1 << 22 # Converts Ns into regular notes.
+        NoLongNotes = 1 << 22 # Converts Ns into regular notes.
         Randomize = 1 << 23 # Randomizes the playfield's lanes.
         Speed055X = 1 << 24 # Speed 0.55x
         Speed065X = 1 << 25 # Speed 0.65x
@@ -196,13 +196,6 @@ class QuaverAchievement(Serializable):
         self.progress_str: str = None
         
         super().__init__(data)
-        
-    # TODO: Implement creating progress string for achievements    
-        
-    # def create_progress_str(self, user: QuaverUser, reverse: bool = False):
-    #     progress_str: str = "Progress: "
-    #     if not reverse:
-    #         pass
 
 class QuaverScore(Serializable):
     def __init__(self, data: QuaverAPIResponse | dict) -> None:
@@ -247,7 +240,7 @@ class QuaverMapInfo(Serializable):
         self.bpm: int = None
         self.difficulty_rating: float = None
         self.count_hitobject_normal: int = None
-        self.count_hit_object_long: int = None
+        self.count_hitobject_long: int = None
         self.long_note_percentage: float = None
         self.max_combo: int = None
         self.play_count: int = None

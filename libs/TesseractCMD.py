@@ -1,14 +1,15 @@
 import hikari
 import lightbulb
 import miru
+from miru.ext import nav
 import os
 import time
+import math
 import libs.TesseractAPIWrapper as Requester
 import libs.TesseractVisuals as Visuals
 import libs.TesseractFuncs as Funcs
 import libs.Types.TesseractTypes as Types
 from libs.Types.TesseractTypes import tesseract_logger as Logger
-from miru.ext import nav
 
 env = Funcs.get_dotenv()
 # default_enabled_guilds=(1033335077779812393)
@@ -39,9 +40,9 @@ async def get_profile(ctx: lightbulb.Context):
     
     Logger.info(f"Started grabbing profile using v2 of {username}")
     
-    search_result: list[Types.QuaverUser] = Requester.search_by_namev2(username)
+    search_result: Types.QuaverUser = Requester.get_profile_by_id_or_name(username)
     
-    user_info = search_result[0]
+    user_info = search_result
     profile_embed_4k = Visuals.ProfileEmbedv2(user_info, 1)
     profile_embed_7k = Visuals.ProfileEmbedv2(user_info, 2)
     pages = [profile_embed_4k, profile_embed_7k]
@@ -53,35 +54,29 @@ async def get_profile(ctx: lightbulb.Context):
     client.start_view(navigator)
     
     Logger.info(f"Got profile of {username} using v2 in {time.perf_counter() - time_start:.3f}s")
-        
+    
 @user.child
-@lightbulb.option("type", "Type of achievements to return (Unlocked by default)", type=str, choices=['Unlocked', 'Locked'], default='Unlocked')
 @lightbulb.option("username", "Username for needed profile (if not given will use your Discord Global Name)", type=str, required=False)
 @lightbulb.command("achievements", "Get achievements from user's profile")
 @lightbulb.implements(lightbulb.SlashSubCommand)
 async def get_achievements(ctx: lightbulb.Context):
     time_start = time.perf_counter()
-    username = (ctx.options.username if ctx.options.username is not None else ctx.author.global_name) 
-    lock_type = None
-    match ctx.options.type:
-        case "Unlocked":
-            lock_type = True
-        case "Locked":
-            lock_type = False
-        case _:
-            await ctx.respond("Invalid unlock type! Please enter a valid one")
-    Logger.info(f"Started grabbing {'unlocked' if lock_type == True else 'locked'} achievements of {username}")
-    search_result = Requester.search_by_name(username)
-    user_info = Requester.get_full_profile_by_id(search_result['users'][0]['id'])
-    achievements = Requester.get_achievements_by_id(search_result['users'][0]['id'])
-    top_score_4k = Requester.get_best_scores_by_id(search_result['users'][0]['id'], 1, 1)
-    top_score_7k = Requester.get_best_scores_by_id(search_result['users'][0]['id'], 2, 1)
-    achievement_list = Funcs.process_achievement_list(user_info, achievements, lock_type, top_score_7k, top_score_4k)['achievements']
-    achievement_embed = Visuals.AchievementsEmbed(achievement_list, username, lock_type)
-    page_select = Visuals.AchievementsPagesView(achievement_list, username, lock_type)
-    client.start_view(page_select)
-    await ctx.respond(achievement_embed, components=page_select)
-    Logger.info(f"Got {'unlocked' if lock_type == True else 'locked'} achievements of {username} in {time.perf_counter() - time_start:.3f}s")
+    username = (ctx.options.username if ctx.options.username is not None else ctx.author.global_name)
+    Logger.info(f"Started grabbing achievements of {username} using v2")
+    user_profile = Requester.get_profile_by_id_or_name(username)
+    achievements = Requester.get_achievements_by_idv2(user_profile.id)
+    pages = []
+    for page in range(math.ceil((len(achievements) / 5))):
+        new_achievement_embed = Visuals.AchievementsEmbedv2(achievements, user_profile, page)
+        pages.append(new_achievement_embed)
+        
+    navigator = nav.NavigatorView(pages=pages)
+    
+    builder = await navigator.build_response_async(client)
+    await builder.create_initial_response(ctx.interaction)
+    client.start_view(navigator)
+    
+    Logger.info(f"Got achievements of {username} in {time.perf_counter() - time_start:.3f}s")        
 
 @user.child
 @lightbulb.option("mode", "Which gamemode score to get (4K by default)", type=str, choices=['4K', "7K"], default='4K')
