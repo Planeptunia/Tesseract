@@ -4,65 +4,6 @@ import libs.Types.TesseractTypes as Globals
 def get_dotenv() -> dict:
     return dotenv.dotenv_values(".env")
 
-def process_achievement_list(user_info: dict, achievements_data: dict, lock_type: bool, top_score_7k: dict, top_score_4k: dict) -> dict:
-    result = {}
-    result['achievements'] = []
-    user_info = user_info['user']
-    result['username'] = user_info['info']['username']
-    result['lock_type'] = lock_type
-    for achievement in achievements_data['achievements']:
-        if achievement['unlocked'] == lock_type:
-            result['achievements'].append(achievement)
-    for index, achievement in enumerate(result['achievements']):
-        result['achievements'][index] = add_progress_str_to_achievement(achievement, get_max_playcount(user_info), get_max_total_rating(user_info),
-                                                                        get_max_combo(user_info), get_max_map_rating(top_score_4k, top_score_7k),
-                                                                        get_max_fails(user_info), get_max_top(user_info), get_max_hits(user_info),
-                                                                        get_max_ranked_score(user_info))
-    return result
-
-def get_max_ranked_score(user_info: dict) -> int:
-    return (user_info['keys4']['stats']['ranked_score'] if user_info['keys4']['stats']['ranked_score'] > user_info['keys7']['stats']['ranked_score'] else user_info['keys7']['stats']['ranked_score'])
-
-def get_max_top(user_info: dict) -> int:
-    return (user_info['keys4']['globalRank'] if user_info['keys4']['globalRank'] < user_info['keys7']['globalRank'] else user_info['keys7']['globalRank'])
-
-def get_max_fails(user_info: dict) -> int:
-    return (user_info['keys4']['stats']['fail_count'] if user_info['keys4']['stats']['fail_count'] > user_info['keys7']['stats']['fail_count'] else user_info['keys7']['stats']['fail_count'])
-
-def get_max_combo(user_info: dict) -> int:
-    return (user_info['keys4']['stats']['max_combo'] if user_info['keys4']['stats']['max_combo'] > user_info['keys7']['stats']['max_combo'] else user_info['keys7']['stats']['max_combo'])
-
-def get_max_playcount(user_info: dict) -> int:
-    return (user_info['keys4']['stats']['play_count'] if user_info['keys4']['stats']['play_count'] > user_info['keys7']['stats']['play_count'] else user_info['keys7']['stats']['play_count'])
-
-            
-def get_max_total_rating(user_info: dict) -> float:
-    return (user_info['keys4']['stats']['overall_performance_rating'] if user_info['keys4']['stats']['overall_performance_rating'] > user_info['keys7']['stats']['overall_performance_rating'] else user_info['keys4']['stats']['overall_performance_rating'])
-        
-def get_max_map_rating(top_score_4k: dict, top_score_7k: dict) -> float:
-    max_map_rating = 0.0
-    if top_score_4k['scores'] not in [[], None] and top_score_7k['scores'] not in [[], None]:
-        max_map_rating = (top_score_4k['scores'][0]['performance_rating'] if top_score_4k['scores'][0]['performance_rating'] > top_score_7k['scores'][0]['performance_rating'] else top_score_7k['scores'][0]['performance_rating'])
-    else:
-        if top_score_4k['scores'] in [[], None] and top_score_7k['scores'] in [[], None]:
-            max_map_rating = 0.0
-        elif top_score_4k['scores'] in [[], None]:
-            max_map_rating = top_score_7k['scores'][0]['performance_rating']
-        elif top_score_7k['scores'] in [[], None]:
-            max_map_rating = top_score_4k['scores'][0]['performance_rating']
-    return max_map_rating
-    
-def get_max_hits(user_info: dict) -> int:
-    hits_4key = 0
-    hits_7key = 0
-    for key in user_info['keys4']['stats'].keys():
-        if key.startswith("total_") and key not in ['total_score', 'total_pauses', 'total_miss']:
-            hits_4key += user_info['keys4']['stats'][key]
-    for key in user_info['keys7']['stats'].keys():
-        if key.startswith("total_") and key not in ['total_score', 'total_pauses', 'total_miss']:
-            hits_7key += user_info['keys7']['stats'][key]
-    return (hits_4key if hits_4key > hits_7key else hits_7key)
-
 def get_progress_percent(value: int | float, max_value: Globals.ProgressNumbers, reverse: bool = False) -> str:
     if not reverse:
         ratio = value / max_value.value

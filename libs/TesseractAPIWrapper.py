@@ -30,7 +30,7 @@ def get_achievements_by_idv2(id: int) -> list[Types.QuaverAchievement]:
         achievement_list.append(new_achievement)
     return achievement_list
 
-def get_recent_scores_by_idv2(id: int, mode: int, page: int = 0):
+def get_recent_scores_by_idv2(id: int, mode: int, page: int = 0) -> list[Types.QuaverScore]:
     resp = requests.get(f"{QUAVER_APIv2_DOMAIN}/user/{id}/scores/{mode}/recent", params={'page': page})
     response = Types.QuaverAPIResponse(resp.status_code, json.loads(resp.content))
     score_list = []
@@ -39,8 +39,18 @@ def get_recent_scores_by_idv2(id: int, mode: int, page: int = 0):
         score_list.append(new_score)
     return score_list
 
-def get_mapset_info_by_id(id: int):
+def get_mapset_info_by_id(id: int) -> Types.QuaverMapset:
     resp = requests.get(f"{QUAVER_APIv2_DOMAIN}/mapset/{id}")
     response = Types.QuaverAPIResponse(resp.status_code, json.loads(resp.content))
-    Logger.debug(response.content)
     return Types.QuaverMapset(response.content['mapset'])
+
+def get_map_info_by_id(id: int) -> Types.QuaverMapInfo:
+    resp = requests.get(f"{QUAVER_APIv2_DOMAIN}/map/{id}")
+    response = Types.QuaverAPIResponse(resp.status_code, json.loads(resp.content))
+    return Types.QuaverMapInfo(response.content['map'])
+
+def get_user_pb_by_md5(map_md5: str, user_id: int) -> Types.QuaverScore:
+    resp = requests.get(f"{QUAVER_APIv2_DOMAIN}/scores/{map_md5}/{user_id}/all")
+    response = Types.QuaverAPIResponse(resp.status_code, json.loads(resp.content))
+    print(response.content)
+    return Types.QuaverScore(response.content['score'])    

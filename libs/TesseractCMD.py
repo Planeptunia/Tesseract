@@ -100,9 +100,12 @@ async def get_recent_score(ctx: lightbulb.Context):
     Logger.info(f"Got most recent score of {username} in {time.perf_counter() - time_start:.3f}s using v2")
 
 @bot.command
-@lightbulb.command("Compare", "Get yours best score on the map")
+# @lightbulb.option("username", "Username for needed profile (if not given will use your Discord Global Name)", type=str, required=False)
+@lightbulb.command("compare", "Get yours best score on the map")
 @lightbulb.implements(lightbulb.MessageCommand)
 async def compare_score(ctx: lightbulb.MessageContext):
+    # username = (ctx.options.username if ctx.options.username is not None else ctx.author.global_name)
+    username = ctx.author.global_name
     def find_quaver_mapset_link(message: hikari.Message):
         pattern = "https:\/\/quavergame\.com\/mapset\/map\/(\d{1,})"
         id = None
@@ -120,8 +123,11 @@ async def compare_score(ctx: lightbulb.MessageContext):
     if map_id == None:
         await ctx.respond("Haven't been able to find a valid mapset link in the message")
     else:
-        map_info = Requester.get_mapset_info_by_id(map_id)
-        await ctx.respond("mewo")
+        search_result = Requester.get_profile_by_id_or_name(username)
+        map_info = Requester.get_map_info_by_id(map_id)
+        score_info = Requester.get_user_pb_by_md5(map_info.md5, search_result.id)
+        map_embed = Visuals.CompareEmbed(score_info, map_info)
+        await ctx.respond(map_embed)
 
 @bot.command
 @lightbulb.add_checks(lightbulb.owner_only, lightbulb.guild_only)

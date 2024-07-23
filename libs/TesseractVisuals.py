@@ -10,6 +10,11 @@ emojis = {"X": "<:gradex:1262201488009072701>", "SS": "<:gradess:126220154719070
           "B": "<:gradeb:1262201655097561209>", "C": "<:gradec:1262201670188929074>",
           "D": "<:graded:1262201683526684757>", "F": "<:gradef:1262728266205106258>"}
 
+difficulty_colors = {"beginner": 0xd1fffa, "easy": 0x5eff75,
+                     "normal": 0x5ec4ff, "hard": 0xf5b25b,
+                     "insane": 0xf9645d, "expert": 0xd761eb,
+                     "extreme": 0x7b61eb, "master": 0xb7b7b7}
+
 class ProfileEmbedv2(hikari.Embed):
     def generate_judgement_text(self) -> str:
         
@@ -127,3 +132,23 @@ class RecentScoreEmbedv2(hikari.Embed):
         self.set_image(f"https://cdn.quavergame.com/mapsets/{self.score.map.mapset_id}.jpg")
         
         self.set_footer(text=f"Score by {self.user_info.username}", icon=self.user_info.avatar_url)
+
+class CompareEmbed(hikari.Embed):
+    def __init__(self, score_info: Types.QuaverScore, map_info: Types.QuaverMapInfo) -> None:
+        self.score_info = score_info
+        self.map_info = map_info
+        super().__init__(title=f"{self.map_info.artist} - {self.map_info.title} ({self.map_info.difficulty_name})", url=f"https://quavergame.com/mapset/map/{self.score_info.map.id}",
+                         color=(0, 102, 204))
+        
+        self.set_author(name=self.score_info.user.username, icon=self.score_info.user.avatar_url)
+        
+    
+class MapInfoEmbed(hikari.Embed):
+    def __init__(self, map_info: Types.QuaverMapInfo) -> None:
+        self.map_info = map_info
+        
+        super().__init__(title=f"{self.map_info.artist} - {self.map_info.title}", description=f"**Difficulty: {self.map_info.difficulty_name} ({self.map_info.difficulty_rating:.2f})**", color=difficulty_colors['normal'],
+                         url=f"https://quavergame.com/mapset/map/{self.map_info.id}")
+        
+        self.set_image(f"https://cdn.quavergame.com/mapsets/{self.map_info.id}.jpg")
+        

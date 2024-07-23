@@ -130,15 +130,18 @@ class Serializable:
     
     def serialize(self):
         data = self.data
-        if len(data.keys()) > 0:
-            for key in data.keys():
-                try:
-                    if data[key] is not None:
-                        setattr(self, key, data[key])
-                    else:
-                        tesseract_logger.warning(f"Unable to serialize attribute {key} for {self.__class__.__name__}: Attribute is None in data, ignoring")
-                except AttributeError:
-                    tesseract_logger.warning(f"Failed to serialize attribute {key} for {self.__class__.__name__}: Attribute not found in object, continuing")
+        if data is not None:
+            if len(data.keys()) > 0:
+                for key in data.keys():
+                    try:
+                        if data[key] is not None:
+                            setattr(self, key, data[key])
+                        else:
+                            tesseract_logger.warning(f"Unable to serialize attribute {key} for {self.__class__.__name__}: Attribute is None in data, ignoring")
+                    except AttributeError:
+                        tesseract_logger.warning(f"Failed to serialize attribute {key} for {self.__class__.__name__}: Attribute not found in object, continuing")
+        else:
+            tesseract_logger.warning(f"Unable to serialize for {self.__class__.__name__} - data is None")
                   
 class QuaverUser(Serializable):
     def __init__(self, data: QuaverAPIResponse | dict) -> None:
@@ -219,9 +222,11 @@ class QuaverScore(Serializable):
         self.count_miss: int = None
         self.grade: str = None
         self.map: dict | QuaverMapInfo = None
+        self.user: dict | QuaverUser = None
         
         super().__init__(data)
         self.map = QuaverMapInfo(self.map)
+        self.user = QuaverUser(self.user)
         
 class QuaverMapInfo(Serializable):
     def __init__(self, data: QuaverAPIResponse | dict) -> None:
