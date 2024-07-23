@@ -52,5 +52,4 @@ def get_map_info_by_id(id: int) -> Types.QuaverMapInfo:
 def get_user_pb_by_md5(map_md5: str, user_id: int) -> Types.QuaverScore:
     resp = requests.get(f"{QUAVER_APIv2_DOMAIN}/scores/{map_md5}/{user_id}/all")
     response = Types.QuaverAPIResponse(resp.status_code, json.loads(resp.content))
-    print(response.content)
     return Types.QuaverScore(response.content['score'])    

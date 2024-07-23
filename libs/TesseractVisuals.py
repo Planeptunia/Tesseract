@@ -2,6 +2,7 @@ import dateutil.parser as dp
 import hikari
 import miru
 import math
+from datetime import datetime
 import libs.Types.TesseractTypes as Types
 from libs.Types.TesseractTypes import tesseract_logger as Logger
 
@@ -137,18 +138,62 @@ class CompareEmbed(hikari.Embed):
     def __init__(self, score_info: Types.QuaverScore, map_info: Types.QuaverMapInfo) -> None:
         self.score_info = score_info
         self.map_info = map_info
-        super().__init__(title=f"{self.map_info.artist} - {self.map_info.title} ({self.map_info.difficulty_name})", url=f"https://quavergame.com/mapset/map/{self.score_info.map.id}",
-                         color=(0, 102, 204))
-        
-        self.set_author(name=self.score_info.user.username, icon=self.score_info.user.avatar_url)
-        
+        if self.score_info.id is not None:
+            super().__init__(title=f"{self.map_info.artist} - {self.map_info.title} ({self.map_info.difficulty_name})", url=f"https://quavergame.com/mapset/map/{self.map_info.id}",
+                            color=(0, 102, 204), timestamp=dp.isoparse(self.score_info.timestamp))
+            
+            self.set_image(f"https://cdn.quavergame.com/mapsets/{self.map_info.mapset_id}.jpg")
+            
+            self.add_field(name="Difficulty", value=f"{self.map_info.difficulty_rating:.2f}")
+
+            self.add_field(name="Grade", value=emojis[self.score_info.grade], inline=True)
+            self.add_field(name="Score", value=f"{self.score_info.total_score:,}", inline=True)
+            self.add_field(name="Performance Rating", value=f"{self.score_info.performance_rating:.2f} / {RecentScoreEmbedv2.get_max_rating(RecentScoreEmbedv2.get_original_difficulty(self.score_info.performance_rating, self.score_info.accuracy)):.2f}", inline=True)
+            
+            self.add_field(name="Accuracy", value=f"{self.score_info.accuracy:.2f}%", inline=True)
+            self.add_field(name="Misses", value=f"{self.score_info.count_miss:,}x", inline=True)
+            self.add_field(name="Combo", value=f"{self.score_info.max_combo}x / {self.map_info.max_combo}x", inline=True)
+            
+            self.set_author(name=f"{self.score_info.user.username}'s best", icon=self.score_info.user.avatar_url)
+        else:
+            super().__init__(title=f"{self.map_info.artist} - {self.map_info.title} ({self.map_info.difficulty_name})", url=f"https://quavergame.com/mapset/map/{self.map_info.id}",
+                            color=(0, 102, 204), description="Personal best score for this map was not found")
+            
+            self.set_image(f"https://cdn.quavergame.com/mapsets/{self.map_info.mapset_id}.jpg")
     
 class MapInfoEmbed(hikari.Embed):
+    @staticmethod
+    def get_diff_color(difficulty: float):
+        if difficulty < 1.00:
+            return difficulty_colors['beginner']
+        elif difficulty < 2.50:
+            return difficulty_colors['easy']
+        elif difficulty < 10.00:
+            return difficulty_colors['normal']
+        elif difficulty < 20.00:
+            return difficulty_colors["hard"]
+        elif difficulty < 30.00:
+            return difficulty_colors['insane']
+        elif difficulty < 40.00:
+            return difficulty_colors['expert']
+        elif difficulty < 50.00:
+            return difficulty_colors['extreme']
+        else:
+            return difficulty_colors['master']
+    
     def __init__(self, map_info: Types.QuaverMapInfo) -> None:
         self.map_info = map_info
         
-        super().__init__(title=f"{self.map_info.artist} - {self.map_info.title}", description=f"**Difficulty: {self.map_info.difficulty_name} ({self.map_info.difficulty_rating:.2f})**", color=difficulty_colors['normal'],
+        super().__init__(title=f"{self.map_info.artist} - {self.map_info.title}", description=f"{self.map_info.desc}", color=self.get_diff_color(self.map_info.difficulty_rating),
                          url=f"https://quavergame.com/mapset/map/{self.map_info.id}")
+        
+        self.set_author(name=f"Map by {self.map_info.creator_username}")
+        
+        self.add_field(name="Gamemode", value=f"{"4K" if self.map_info.game_mode == 1 else "7K"}")
+        self.add_field(name="Difficulty", value=f"**{self.map_info.difficulty_name} ({self.map_info.difficulty_rating:.2f})")
+        self.add_field(name="Length", value=datetime.fromtimestamp(self.map_info.length).strftime("%M:%S"))
+        
+        self.add_field(name="")
         
         self.set_image(f"https://cdn.quavergame.com/mapsets/{self.map_info.id}.jpg")
         

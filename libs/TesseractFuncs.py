@@ -1,8 +1,22 @@
 import dotenv
+import re
 import libs.Types.TesseractTypes as Globals
 
 def get_dotenv() -> dict:
     return dotenv.dotenv_values(".env")
+
+def find_quaver_mapset_link(message):
+    pattern = "https:\/\/quavergame\.com\/mapset\/map\/(\d{1,})"
+    id = None
+    if message.content is not None:
+        id = re.search(pattern, message.content)
+        if id is not None:
+            id = id.group(1)
+    if len(message.embeds) > 0:
+        id = re.search(pattern, message.embeds[0].url)
+        if id is not None:
+            id = id.group(1)
+    return id
 
 def get_progress_percent(value: int | float, max_value: Globals.ProgressNumbers, reverse: bool = False) -> str:
     if not reverse:
